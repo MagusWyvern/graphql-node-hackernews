@@ -1,4 +1,5 @@
 const { ApolloServer } = require('apollo-server');
+const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
@@ -30,7 +31,11 @@ const resolvers = {
     info: () => `This is the API of a Hackernews Clone`,
 
     // Return the dummy data for feed query
-    feed: () => links,
+    // feed: () => links,
+
+    feed: async (parent, args, context) => {
+      return context.prisma.link.findMany()
+    },
 
     link: (_, { id }) => {
       let idCount = links.length;
@@ -52,18 +57,28 @@ const resolvers = {
 
 
   Mutation: {
-    post: (parent, args) => {
+    // post: (parent, args) => {
   
-    let idCount = links.length
+    // let idCount = links.length
 
-       const link = {
-        id: `link-${idCount++}`,
-        description: args.description,
-        url: args.url,
-      }
-      links.push(link)
-      return link
+    //    const link = {
+    //     id: `link-${idCount++}`,
+    //     description: args.description,
+    //     url: args.url,
+    //   }
+    //   links.push(link)
+    //   return link
+    // },
+    post: (parent, args, context, info) => {
+      const newLink = context.prisma.link.create({
+        data: {
+          url: args.url,
+          description: args.description,
+        },
+      })
+      return newLink
     },
+
 
     updateLink: (_, args) => {
       let id = args.id
@@ -99,6 +114,8 @@ const resolvers = {
   },
 }
 
+const prisma = new PrismaClient()
+
 // Bundle Schema and Resolvers and pass them to Apollo
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(
@@ -106,6 +123,9 @@ const server = new ApolloServer({
     'utf8'
   ),
   resolvers,
+  context: {
+    prisma,
+  }
 })
 
 server
