@@ -3,73 +3,39 @@ const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-// Hard-coded dummy data for testing
-let links = [
-  { 
-  id: 'link-0',
-  url: 'www.howtographql.com',
-  description: 'Fullstack tutorial for GraphQL'
-  },
-
-  {
-  id: 'link-1',
-  url: 'https://www.prisma.io/',
-  description: 'Next-generation Node.js and TypeScript ORM'  
-  },
-
-  {
-  id: 'link-2',
-  url: 'https://d3js.org/',
-  description: 'D3.js is a JavaScript library for manipulating documents based on data.'
-  }
-]
+// Note: The GraphQL schema is auto-generated from the GraphQL types we defined in our prisma schema.
 
 // Implementation of the GraphQL Schema
 const resolvers = {
   Query: {
 
+    // Return the info for the API
     info: () => `This is the API of a Hackernews Clone`,
 
-    // Return the dummy data for feed query
-    // feed: () => links,
-
+    // Use prisma client to access the API using the context argument
     feed: async (parent, args, context) => {
       return context.prisma.link.findMany()
     },
 
-    link: (_, { id }) => {
-      let idCount = links.length;
-      
-      // We iterate through the array, if the object's id matches queried id, return it.
+    // Find a link by its ID
+    link: (parent, args, context) => {
 
-        for (let i = 0; i < idCount; i++){
-          if (links[i].id == id) {
-            return links[i]
-          }
-        }
-      
+      const oneLink = context.prisma.link.findUnique({
+        where: {
+          id: parseInt(args.id),
+        },
+      })
+      return oneLink
 
-      // If all else fails, uncomment the code below to return the first link anyway
-      return links[0]
+
     }
-
   },
 
 
   Mutation: {
-    // post: (parent, args) => {
-  
-    // let idCount = links.length
-
-    //    const link = {
-    //     id: `link-${idCount++}`,
-    //     description: args.description,
-    //     url: args.url,
-    //   }
-    //   links.push(link)
-    //   return link
-    // },
+    // Create a new link
     post: (parent, args, context, info) => {
+      
       const newLink = context.prisma.link.create({
         data: {
           url: args.url,
@@ -79,37 +45,31 @@ const resolvers = {
       return newLink
     },
 
+    // Use prisma client to update a link
+    updateLink: async (parent, args, context) => {
 
-    updateLink: (_, args) => {
-      let id = args.id
-      let url = args.description
-      let description = args.description
-      let idCount = links.length;
-      
-      // We iterate through the array, if the object's id matches queried id, return it.
-      
-      for (let i = 0; i < idCount; i++){
-        if (links[i].id == id) {
-          links.splice(i, 1, {id, url, description})
-          return links[i]
-        }
-      }
+      const updatedLink = context.prisma.link.update({
+        where: {
+          id: parseInt(args.id),
+        },
+        data: {
+          description: args.description,
+          url: args.url,
+        },
+      })
 
+      return updatedLink
 
     },
 
-    deleteLink: (_, { id }) => {
-
-      let idCount = links.length
-
-      // Iterate through the array of objects, if it matches then splice / delete it
-      for (let i = 0; i < idCount; i++){
-        if (links[i].id == id) {
-          links.splice(i, 1)
-          return links[i]
-        }
-      }
-    }
+    // Use prisma client to delete a link
+    deleteLink: async (parent, args, context) => {
+      return context.prisma.link.delete({
+        where: {
+          id: args.id,
+        },
+      })
+    },
 
   },
 }
