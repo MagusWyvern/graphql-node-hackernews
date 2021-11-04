@@ -1,3 +1,5 @@
+// This file is deprecated. Please use src/script.js instead.
+
 const { PrismaClient } = require("@prisma/client")
 
 const prisma = new PrismaClient()
